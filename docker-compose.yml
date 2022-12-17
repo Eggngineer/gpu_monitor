@@ -1,0 +1,70 @@
+# version: "3"
+# volumes:
+#   prometheus/prometheus_data: {}
+#   grafana/grafana_data: {}
+
+networks:
+  gpu_metrics:
+    driver: bridge
+
+services:
+  dcgm_exporter:
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:${DCGM_EXPORTER_IMAGE_TAG}
+    container_name: dcgm_exporter
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    privileged: true
+    ports:
+      - "${DCGM_EXPORTER_HOST_PORT}:9400"
+    networks:
+      - gpu_metrics
+
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_IMAGE_TAG}
+    container_name: prometheus
+    hostname: prometheus
+    ports:
+      - ${PROMETHEUS_HOST_PORT}:9090
+    command: 
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    volumes:
+      - ./prometheus/prometheus_data/:/etc/prometheus/:ro
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: always
+    networks:
+      - gpu_metrics
+
+  node_exporter:
+    image: prom/node-exporter
+    container_name: node_exporter
+    ports:
+      - 9100:9100
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+    networks:
+      - gpu_metrics
+  
+  grafana:
+    image: grafana/grafana:${GRAFANA_IMAGE_TAG}
+    container_name: grafana
+    ports:
+      - ${GRAFANA_HOST_PORT}:3000
+    restart: always
+    volumes:
+      - ./grafana/conf/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/grafana_data:/var/lib/grafana
+      - ./grafana/grafana_provisioning:/etc/grafana/provisioning
+      - ./grafana/grafana_dashboards:/etc/dashboards
+    networks:
+      - gpu_metrics
