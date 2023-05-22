@@ -21,6 +21,7 @@ services:
     privileged: true
     ports:
       - "${DCGM_EXPORTER_HOST_PORT}:9400"
+    restart: always
     networks:
       - gpu_metrics
 
@@ -30,7 +31,7 @@ services:
     hostname: prometheus
     ports:
       - ${PROMETHEUS_HOST_PORT}:9090
-    command: 
+    command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     volumes:
       - ./prometheus/prometheus_data/:/etc/prometheus/:ro
@@ -52,9 +53,10 @@ services:
       - '--path.procfs=/host/proc'
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
+    restart: always
     networks:
       - gpu_metrics
-  
+
   grafana:
     image: grafana/grafana:${GRAFANA_IMAGE_TAG}
     container_name: grafana
@@ -66,5 +68,6 @@ services:
       - ./grafana/grafana_data:/var/lib/grafana
       - ./grafana/grafana_provisioning:/etc/grafana/provisioning
       - ./grafana/grafana_dashboards:/etc/dashboards
+    restart: always
     networks:
       - gpu_metrics
