@@ -1,0 +1,33 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  - job_name: node
+    static_configs:
+      - targets:
+        - "(ex)xxx.xxx.xxx.xxx:machine01"
+    relabel_configs:
+      - source_labels: [__address__]  # targetsエントリを分解してinstanceラベルの値を生成する
+        regex: '([^:]+):(\d+):(.*)'
+        target_label: instance
+        replacement: '${3}'      # instance=<HOSTNAME>:<PORT>
+      - source_labels: [__address__]  # targetsエントリを分解して、実際のアクセス先を生成する
+        regex: '([^:]+):(\d+):(.*)'
+        target_label: __address__
+        replacement: '${1}:${2}'      # __address__=<IP>:<PORT>
+
+
+  - job_name: dcgm
+    static_configs:
+      - targets:
+        - "(ex)xxx.xxx.xxx.xxx:machine01"
+    relabel_configs:
+      - source_labels: [__address__]  # targetsエントリを分解してinstanceラベルの値を生成する
+        regex: '([^:]+):(\d+):(.*)'
+        target_label: instance
+        replacement: '${3}'      # instance=<HOSTNAME>:<PORT>
+      - source_labels: [__address__]  # targetsエントリを分解して、実際のアクセス先を生成する
+        regex: '([^:]+):(\d+):(.*)'
+        target_label: __address__
+        replacement: '${1}:${2}'      # __address__=<IP>:<PORT>

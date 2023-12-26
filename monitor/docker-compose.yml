@@ -1,29 +1,25 @@
-# version: "3"
-# volumes:
-#   prometheus/prometheus_data: {}
-#   grafana/grafana_data: {}
+version: "3"
 
 networks:
   gpu_metrics:
     driver: bridge
 
 services:
-  dcgm_exporter:
-    image: nvcr.io/nvidia/k8s/dcgm-exporter:${DCGM_EXPORTER_IMAGE_TAG}
-    container_name: dcgm_exporter
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [ gpu ]
-    privileged: true
-    ports:
-      - "${DCGM_EXPORTER_HOST_PORT}:9400"
-    restart: always
-    networks:
-      - gpu_metrics
+  # dcgm_exporter:
+  #   image: nvcr.io/nvidia/k8s/dcgm-exporter:${DCGM_EXPORTER_IMAGE_TAG}
+  #   container_name: dcgm_exporter
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [ gpu ]
+  #   privileged: true
+  #   ports:
+  #     - "${DCGM_EXPORTER_HOST_PORT}:9400"
+  #   networks:
+  #     - gpu_metrics
 
   prometheus:
     image: prom/prometheus:${PROMETHEUS_IMAGE_TAG}
@@ -34,8 +30,7 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     volumes:
-      - ./prometheus/prometheus_data/:/etc/prometheus/:ro
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/prometheus_data/:/etc/prometheus/
     restart: always
     networks:
       - gpu_metrics
@@ -46,14 +41,13 @@ services:
     ports:
       - 9100:9100
     volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
+      - /proc:/host/proc
+      - /sys:/host/sys
       - /:/rootfs:ro
     command:
       - '--path.procfs=/host/proc'
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
-    restart: always
     networks:
       - gpu_metrics
 
@@ -68,6 +62,7 @@ services:
       - ./grafana/grafana_data:/var/lib/grafana
       - ./grafana/grafana_provisioning:/etc/grafana/provisioning
       - ./grafana/grafana_dashboards:/etc/dashboards
-    restart: always
     networks:
       - gpu_metrics
+    user:
+      '$PID:$GID'

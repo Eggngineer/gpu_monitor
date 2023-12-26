@@ -1,0 +1,40 @@
+version: "3"
+
+networks:
+  gpu_metrics:
+    driver: bridge
+
+services:
+  dcgm_exporter:
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:${DCGM_EXPORTER_IMAGE_TAG}
+    container_name: dcgm_exporter
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    privileged: true
+    ports:
+      - "${DCGM_EXPORTER_HOST_PORT}:9400"
+    restart: always
+    networks:
+      - gpu_metrics
+
+  node_exporter:
+    image: prom/node-exporter
+    container_name: node_exporter
+    ports:
+      - 9100:9100
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+    restart: always
+    networks:
+      - gpu_metrics
